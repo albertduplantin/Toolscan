@@ -57,8 +57,10 @@ export async function GET() {
       );
     }
 
+    const tenantId = currentUser.tenantId;
+
     const allCabinets = await db.query.cabinets.findMany({
-      where: (cabinets, { eq }) => eq(cabinets.tenantId, currentUser.tenantId),
+      where: (cabinets, { eq }) => eq(cabinets.tenantId, tenantId),
       orderBy: (cabinets, { desc }) => [desc(cabinets.createdAt)],
       with: {
         tools: true,

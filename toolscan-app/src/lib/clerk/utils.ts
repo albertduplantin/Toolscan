@@ -114,7 +114,15 @@ export async function syncUserFromClerk(clerkUserId: string) {
       .returning();
   }
 
-  return user;
+  // Re-fetch with tenant relation
+  const userWithTenant = await db.query.users.findFirst({
+    where: eq(users.id, user.id),
+    with: {
+      tenant: true,
+    },
+  });
+
+  return userWithTenant;
 }
 
 /**

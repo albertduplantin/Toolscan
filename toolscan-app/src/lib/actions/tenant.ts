@@ -70,6 +70,13 @@ export async function createTenant(name: string) {
 }
 
 export async function getTenantStats(tenantId: string) {
+  // Get cabinet IDs first
+  const tenantCabinets = await db.query.cabinets.findMany({
+    where: (cabinets, { eq }) => eq(cabinets.tenantId, tenantId),
+    columns: { id: true },
+  });
+  const cabinetIds = tenantCabinets.map((c) => c.id);
+
   const [cabinetCount, userCount, verificationCount] = await Promise.all([
     db.query.cabinets
       .findMany({
@@ -81,20 +88,14 @@ export async function getTenantStats(tenantId: string) {
         where: (users, { eq }) => eq(users.tenantId, tenantId),
       })
       .then((r) => r.length),
-    db.query.verifications
-      .findMany({
-        where: (verifications, { inArray }) =>
-          inArray(
-            verifications.cabinetId,
-            db.query.cabinets
-              .findMany({
-                where: (cabinets, { eq }) => eq(cabinets.tenantId, tenantId),
-                columns: { id: true },
-              })
-              .then((r) => r.map((c) => c.id))
-          ),
-      })
-      .then((r) => r.length),
+    cabinetIds.length > 0
+      ? db.query.verifications
+          .findMany({
+            where: (verifications, { inArray }) =>
+              inArray(verifications.cabinetId, cabinetIds),
+          })
+          .then((r) => r.length)
+      : 0,
   ]);
 
   return {

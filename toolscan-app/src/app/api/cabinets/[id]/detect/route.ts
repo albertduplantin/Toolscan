@@ -25,13 +25,14 @@ export async function POST(
       );
     }
 
+    const tenantId = currentUser.tenantId;
     const { id } = await params;
 
     // Verify cabinet belongs to tenant
     const cabinet = await db.query.cabinets.findFirst({
       where: and(
         eq(cabinets.id, id),
-        eq(cabinets.tenantId, currentUser.tenantId)
+        eq(cabinets.tenantId, tenantId)
       ),
     });
 

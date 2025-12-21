@@ -15,9 +15,11 @@ export async function GET() {
       );
     }
 
+    const tenantId = currentUser.tenantId;
+
     // Get all cabinets for this tenant
     const allCabinets = await db.query.cabinets.findMany({
-      where: eq(cabinets.tenantId, currentUser.tenantId),
+      where: eq(cabinets.tenantId, tenantId),
       with: {
         tools: true,
         verifications: {

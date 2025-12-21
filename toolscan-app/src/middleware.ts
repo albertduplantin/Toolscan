@@ -21,7 +21,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   // Check super admin routes
   if (isSuperAdminRoute(req)) {
-    const role = sessionClaims?.metadata?.role;
+    const role = (sessionClaims as any)?.metadata?.role;
     if (role !== 'super_admin') {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }

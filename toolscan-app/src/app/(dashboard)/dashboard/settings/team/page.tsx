@@ -3,6 +3,7 @@ import { getCurrentDbUser, isAdmin } from '@/lib/clerk/utils';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { getTenantInvitations } from '@/lib/actions/invitations';
 import {
   Card,
   CardContent,
@@ -20,6 +21,9 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatDateTime } from '@/lib/utils';
+import { InviteByEmailButton } from '@/components/team/invite-by-email-button';
+import { CreateInviteLinkButton } from '@/components/team/create-invite-link-button';
+import { InvitationsList } from '@/components/team/invitations-list';
 
 export default async function TeamPage() {
   const currentUser = await getCurrentDbUser();
@@ -33,11 +37,16 @@ export default async function TeamPage() {
     redirect('/dashboard/settings');
   }
 
+  const tenantId = currentUser.tenantId;
+
   // Get all team members
   const teamMembers = await db.query.users.findMany({
-    where: eq(users.tenantId, currentUser.tenantId),
+    where: eq(users.tenantId, tenantId),
     orderBy: (users, { desc }) => [desc(users.createdAt)],
   });
+
+  // Get all invitations
+  const invitationsList = await getTenantInvitations();
 
   const getRoleBadge = (role: string) => {
     const variants = {
@@ -68,6 +77,7 @@ export default async function TeamPage() {
         </p>
       </div>
 
+      {/* Team Members */}
       <Card>
         <CardHeader>
           <CardTitle>Membres de l'équipe ({teamMembers.length})</CardTitle>
@@ -114,21 +124,24 @@ export default async function TeamPage() {
         </CardContent>
       </Card>
 
+      {/* Invite Members */}
       <Card>
         <CardHeader>
           <CardTitle>Inviter des membres</CardTitle>
           <CardDescription>
-            Fonctionnalité à venir : Invitez des utilisateurs à rejoindre votre
-            organisation
+            Invitez des utilisateurs à rejoindre votre organisation par email ou avec un lien d'invitation
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Pour le moment, les utilisateurs doivent créer un compte et un
-            administrateur doit les ajouter manuellement à votre organisation.
-          </p>
+          <div className="flex gap-4">
+            <InviteByEmailButton />
+            <CreateInviteLinkButton />
+          </div>
         </CardContent>
       </Card>
+
+      {/* Invitations List */}
+      <InvitationsList invitations={invitationsList} />
     </div>
   );
 }

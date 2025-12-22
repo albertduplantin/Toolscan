@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,10 +16,19 @@ import { createTenant } from '@/lib/actions/tenant';
 import { ScanLine } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tenantName, setTenantName] = useState('');
   const [loading, setLoading] = useState(false);
+  const invitationToken = searchParams.get('invitation');
+
+  useEffect(() => {
+    // If there's an invitation token, redirect to join page
+    if (invitationToken) {
+      router.push(`/join/${invitationToken}`);
+    }
+  }, [invitationToken, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +56,20 @@ export default function OnboardingPage() {
       setLoading(false);
     }
   };
+
+  // Show loading while redirecting to invitation
+  if (invitationToken) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Traitement de l'invitation...</CardTitle>
+            <CardDescription>Veuillez patienter</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
@@ -110,5 +133,21 @@ export default function OnboardingPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Chargement...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
   );
 }

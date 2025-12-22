@@ -6,6 +6,8 @@ export const roleEnum = pgEnum('role', ['super_admin', 'admin', 'user']);
 export const subscriptionTierEnum = pgEnum('subscription_tier', ['free', 'pro', 'business', 'enterprise']);
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'canceled', 'past_due', 'trialing', 'incomplete']);
 export const cabinetStatusEnum = pgEnum('cabinet_status', ['draft', 'configured', 'active', 'archived']);
+export const invitationTypeEnum = pgEnum('invitation_type', ['email', 'link']);
+export const invitationStatusEnum = pgEnum('invitation_status', ['pending', 'accepted', 'expired', 'revoked']);
 
 // Tenants table
 export const tenants = pgTable('tenants', {
@@ -83,11 +85,31 @@ export const subscriptionUsage = pgTable('subscription_usage', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Invitations table
+export const invitations = pgTable('invitations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }).notNull(),
+  invitedBy: uuid('invited_by').references(() => users.id).notNull(),
+  type: invitationTypeEnum('type').notNull(),
+  status: invitationStatusEnum('status').notNull().default('pending'),
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  email: varchar('email', { length: 255 }), // Only for email invitations
+  role: roleEnum('role').notNull().default('user'),
+  maxUses: integer('max_uses'), // null = unlimited
+  usesCount: integer('uses_count').notNull().default(0),
+  expiresAt: timestamp('expires_at'), // null = never expires
+  acceptedBy: uuid('accepted_by').references(() => users.id),
+  acceptedAt: timestamp('accepted_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   users: many(users),
   cabinets: many(cabinets),
   usageRecords: many(subscriptionUsage),
+  invitations: many(invitations),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -97,6 +119,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   cabinetsCreated: many(cabinets),
   verifications: many(verifications),
+  invitationsSent: many(invitations, { relationName: 'invitedBy' }),
+  invitationsAccepted: many(invitations, { relationName: 'acceptedBy' }),
 }));
 
 export const cabinetsRelations = relations(cabinets, ({ one, many }) => ({
@@ -137,6 +161,23 @@ export const subscriptionUsageRelations = relations(subscriptionUsage, ({ one })
   }),
 }));
 
+export const invitationsRelations = relations(invitations, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [invitations.tenantId],
+    references: [tenants.id],
+  }),
+  inviter: one(users, {
+    relationName: 'invitedBy',
+    fields: [invitations.invitedBy],
+    references: [users.id],
+  }),
+  accepter: one(users, {
+    relationName: 'acceptedBy',
+    fields: [invitations.acceptedBy],
+    references: [users.id],
+  }),
+}));
+
 // Types
 export type Tenant = typeof tenants.$inferSelect;
 export type NewTenant = typeof tenants.$inferInsert;
@@ -155,3 +196,6 @@ export type NewVerification = typeof verifications.$inferInsert;
 
 export type SubscriptionUsage = typeof subscriptionUsage.$inferSelect;
 export type NewSubscriptionUsage = typeof subscriptionUsage.$inferInsert;
+
+export type Invitation = typeof invitations.$inferSelect;
+export type NewInvitation = typeof invitations.$inferInsert;

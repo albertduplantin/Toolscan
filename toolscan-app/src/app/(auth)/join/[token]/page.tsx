@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser as getClerkUser } from '@clerk/nextjs/server';
 import { getInvitationByToken, acceptInvitation } from '@/lib/actions/invitations';
-import { getCurrentDbUser } from '@/lib/clerk/utils';
+import { getCurrentDbUser, syncUserFromClerk } from '@/lib/clerk/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -29,22 +29,52 @@ export default async function JoinPage({
     redirect(signUpUrl);
   }
 
-  // User is authenticated, check if they can accept the invitation
-  const currentUser = await getCurrentDbUser();
+  // User is authenticated, get or create user in database
+  let currentUser = await getCurrentDbUser();
 
+  // If user doesn't exist in our DB yet (just signed up), sync from Clerk
   if (!currentUser) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Error</CardTitle>
-            <CardDescription>
-              There was an error loading your account. Please try again.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
+    try {
+      currentUser = await syncUserFromClerk(userId);
+
+      if (!currentUser) {
+        return (
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>Error</CardTitle>
+                <CardDescription>
+                  There was an error creating your account. Please try again.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/sign-in">
+                  <Button className="w-full">Try again</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+    } catch (error) {
+      return (
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Error</CardTitle>
+              <CardDescription>
+                {error instanceof Error ? error.message : 'An error occurred'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/sign-in">
+                <Button className="w-full">Try again</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
   }
 
   // If user already has a tenant, they can't accept

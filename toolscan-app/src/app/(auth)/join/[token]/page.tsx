@@ -21,9 +21,11 @@ export default async function JoinPage({
     notFound();
   }
 
-  // If user is not authenticated, redirect to sign-up with invitation context
+  // If user is not authenticated, redirect to sign-up with return URL
   if (!userId) {
-    const signUpUrl = `/sign-up?invitation=${token}`;
+    // Use redirect_url parameter to return to this page after sign-up
+    const returnUrl = encodeURIComponent(`/join/${token}`);
+    const signUpUrl = `/sign-up?redirect_url=${returnUrl}`;
     redirect(signUpUrl);
   }
 

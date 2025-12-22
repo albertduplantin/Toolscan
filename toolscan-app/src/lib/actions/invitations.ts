@@ -212,7 +212,7 @@ export async function acceptInvitation(token: string, userId: string) {
     })
     .where(eq(invitations.id, invitation.id));
 
-  revalidatePath('/dashboard');
+  // Don't revalidate here - the calling code will redirect anyway
 
   return { tenantId: invitation.tenantId, role: invitation.role };
 }

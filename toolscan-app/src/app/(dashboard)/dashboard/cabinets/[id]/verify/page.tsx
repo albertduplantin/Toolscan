@@ -206,28 +206,39 @@ export default function VerifyCabinetPage() {
   return (
     <div className="space-y-8">
       <div>
-        <Link href={`/dashboard/cabinets/${cabinetId}`}>
+        <Link href="/dashboard">
           <Button variant="ghost" size="sm" className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour aux détails
+            Retour
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold">Vérification de l'armoire</h1>
-        <p className="text-muted-foreground">{cabinet.name}</p>
+        <h1 className="text-3xl font-bold">{cabinet.name}</h1>
+        <p className="text-muted-foreground">Scanner l'armoire pour détecter les outils manquants</p>
       </div>
 
-      {/* Instructions */}
+      {/* Instructions - Always visible but simplified */}
       {!capturedImage && (
-        <Card>
+        <Card className="bg-primary/5 border-primary/20">
           <CardHeader>
-            <CardTitle>Comment vérifier l'armoire</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Prenez une photo de l'armoire
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <ul className="list-inside list-decimal space-y-1 text-sm text-muted-foreground">
-              <li>Positionnez-vous face à l'armoire</li>
-              <li>Assurez-vous que l'éclairage est similaire à la configuration initiale</li>
-              <li>Prenez une photo depuis le même angle que les photos de référence</li>
-              <li>Le système comparera automatiquement et affichera les outils manquants</li>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-primary">1.</span>
+                <span>Positionnez-vous face à l'armoire</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary">2.</span>
+                <span>Assurez-vous d'avoir un bon éclairage</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary">3.</span>
+                <span>Cliquez sur le bouton pour prendre la photo</span>
+              </li>
             </ul>
           </CardContent>
         </Card>
@@ -235,28 +246,7 @@ export default function VerifyCabinetPage() {
 
       {/* Camera Capture */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            {capturedImage ? 'Photo capturée' : 'Prendre une photo'}
-          </CardTitle>
-          {verificationResult && (
-            <CardDescription>
-              {verificationResult.missingTools.length === 0 ? (
-                <span className="flex items-center gap-2 text-green-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Armoire complète - Tous les outils sont présents
-                </span>
-              ) : (
-                <span className="flex items-center gap-2 text-destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  {verificationResult.missingTools.length} outil(s) manquant(s)
-                </span>
-              )}
-            </CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <CameraCapture
             value={capturedImage}
             onCapture={handleCapture}
@@ -271,73 +261,65 @@ export default function VerifyCabinetPage() {
       {/* Verification Results */}
       {verificationResult && (
         <>
-          {/* Missing Tools */}
-          {verificationResult.missingTools.length > 0 && (
-            <Card className="border-destructive">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-destructive">
-                  <AlertCircle className="h-5 w-5" />
-                  Outils manquants ({verificationResult.missingTools.length})
-                </CardTitle>
-                <CardDescription>
-                  Les outils suivants ne sont pas détectés dans l'armoire
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2">
-                  {verificationResult.missingTools.map((tool) => (
-                    <div
-                      key={tool.id}
-                      className="flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/5 p-3"
-                    >
-                      <AlertCircle className="h-5 w-5 text-destructive" />
-                      <div>
-                        <p className="font-medium">{tool.name}</p>
-                        {tool.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {tool.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Present Tools */}
-          <Card>
+          {/* Result Summary */}
+          <Card className={verificationResult.missingTools.length === 0 ? "border-green-500 bg-green-50" : "border-destructive bg-destructive/5"}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                Outils présents ({verificationResult.presentTools.length})
+              <CardTitle className="flex items-center gap-3">
+                {verificationResult.missingTools.length === 0 ? (
+                  <>
+                    <CheckCircle2 className="h-8 w-8 text-green-600" />
+                    <div>
+                      <p className="text-green-600">Armoire complète !</p>
+                      <p className="text-sm font-normal text-muted-foreground">
+                        Tous les outils sont présents ({verificationResult.presentTools.length}/{cabinet.tools?.length || 0})
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-8 w-8 text-destructive" />
+                    <div>
+                      <p className="text-destructive">Attention !</p>
+                      <p className="text-sm font-normal text-muted-foreground">
+                        {verificationResult.missingTools.length} outil(s) manquant(s)
+                      </p>
+                    </div>
+                  </>
+                )}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-2 md:grid-cols-2">
-                {verificationResult.presentTools.map((tool) => (
+
+            {/* Missing Tools - Only show if there are any */}
+            {verificationResult.missingTools.length > 0 && (
+              <CardContent className="space-y-2">
+                <p className="font-medium text-sm">Outils à récupérer :</p>
+                {verificationResult.missingTools.map((tool) => (
                   <div
                     key={tool.id}
-                    className="flex items-center gap-3 rounded-lg border p-3"
+                    className="flex items-center gap-3 rounded-lg border border-destructive bg-white p-4"
                   >
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
                     <div>
-                      <p className="font-medium">{tool.name}</p>
+                      <p className="font-semibold">{tool.name}</p>
+                      {tool.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {tool.description}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
 
           {/* Actions */}
           <div className="flex gap-4">
-            <Button variant="outline" onClick={handleRetake} className="flex-1">
-              Reprendre la photo
+            <Button variant="outline" onClick={handleRetake} size="lg" className="flex-1">
+              Reprendre
             </Button>
-            <Link href={`/dashboard/cabinets/${cabinetId}`} className="flex-1">
-              <Button className="w-full">Terminer</Button>
+            <Link href="/dashboard" className="flex-1">
+              <Button size="lg" className="w-full">Terminer</Button>
             </Link>
           </div>
         </>

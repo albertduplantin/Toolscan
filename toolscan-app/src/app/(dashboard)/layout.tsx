@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
 import { getCurrentDbUser, hasTenant } from '@/lib/clerk/utils';
 
-const navigation = [
-  { name: 'Tableau de bord', href: '/dashboard', icon: Home },
-  { name: 'Armoires', href: '/dashboard/cabinets', icon: Package },
-  { name: 'Vérifications', href: '/dashboard/verifications', icon: History },
-  { name: 'Analytiques', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Paramètres', href: '/dashboard/settings', icon: Settings },
+// Define navigation items with role requirements
+const allNavigation = [
+  { name: 'Mes armoires', href: '/dashboard', icon: Home, roles: ['user', 'admin', 'super_admin'] },
+  { name: 'Gestion', href: '/dashboard/cabinets', icon: Package, roles: ['admin', 'super_admin'] },
+  { name: 'Historique', href: '/dashboard/verifications', icon: History, roles: ['admin', 'super_admin'] },
+  { name: 'Analytiques', href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'super_admin'] },
+  { name: 'Paramètres', href: '/dashboard/settings', icon: Settings, roles: ['admin', 'super_admin'] },
 ];
 
 export default async function DashboardLayout({
@@ -31,6 +32,11 @@ export default async function DashboardLayout({
   }
 
   const user = await getCurrentDbUser();
+
+  // Filter navigation based on user role
+  const navigation = allNavigation.filter(item =>
+    item.roles.includes(user?.role || 'user')
+  );
 
   return (
     <div className="flex min-h-screen">

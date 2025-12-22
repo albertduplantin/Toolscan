@@ -21,13 +21,36 @@ function OnboardingContent() {
   const searchParams = useSearchParams();
   const [tenantName, setTenantName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingUser, setCheckingUser] = useState(true);
   const invitationToken = searchParams.get('invitation');
 
   useEffect(() => {
     // If there's an invitation token, redirect to join page
     if (invitationToken) {
       router.push(`/join/${invitationToken}`);
+      return;
     }
+
+    // Check if user already has a tenant
+    async function checkUserTenant() {
+      try {
+        const response = await fetch('/api/user/me');
+        if (response.ok) {
+          const user = await response.json();
+          if (user && user.tenantId) {
+            // User already has a tenant, redirect to dashboard
+            router.push('/dashboard');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user tenant:', error);
+      } finally {
+        setCheckingUser(false);
+      }
+    }
+
+    checkUserTenant();
   }, [invitationToken, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,13 +80,15 @@ function OnboardingContent() {
     }
   };
 
-  // Show loading while redirecting to invitation
-  if (invitationToken) {
+  // Show loading while checking user or redirecting to invitation
+  if (invitationToken || checkingUser) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle>Traitement de l'invitation...</CardTitle>
+            <CardTitle>
+              {invitationToken ? 'Traitement de l\'invitation...' : 'Vérification...'}
+            </CardTitle>
             <CardDescription>Veuillez patienter</CardDescription>
           </CardHeader>
         </Card>

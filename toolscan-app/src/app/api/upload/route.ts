@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/clerk/utils';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { put } from '@vercel/blob';
 
 export async function POST(request: Request) {
   try {
@@ -51,31 +49,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'cabinets', cabinetId);
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Generate filename
+    // Generate filename with tenant isolation
     const timestamp = Date.now();
     const extension = file.name.split('.').pop();
-    const filename = `${imageType}-${timestamp}.${extension}`;
-    const filepath = join(uploadsDir, filename);
+    const filename = `cabinets/${currentUser.tenantId}/${cabinetId}/${imageType}-${timestamp}.${extension}`;
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
+    // Upload to Vercel Blob
+    const blob = await put(filename, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
     // Return public URL
-    const publicUrl = `/uploads/cabinets/${cabinetId}/${filename}`;
-
-    return NextResponse.json({ url: publicUrl });
+    return NextResponse.json({ url: blob.url });
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

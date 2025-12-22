@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/clerk/utils';
-import { put } from '@vercel/blob';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request: Request) {
   try {
@@ -49,19 +56,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate filename with tenant isolation
-    const timestamp = Date.now();
-    const extension = file.name.split('.').pop();
-    const filename = `cabinets/${currentUser.tenantId}/${cabinetId}/${imageType}-${timestamp}.${extension}`;
+    // Convert File to buffer for Cloudinary
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-    // Upload to Vercel Blob
-    const blob = await put(filename, file, {
-      access: 'public',
-      addRandomSuffix: false,
+    // Generate public_id with tenant isolation
+    const timestamp = Date.now();
+    const publicId = `toolscan/cabinets/${currentUser.tenantId}/${cabinetId}/${imageType}-${timestamp}`;
+
+    // Upload to Cloudinary using upload_stream
+    const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          public_id: publicId,
+          folder: `toolscan/cabinets/${currentUser.tenantId}/${cabinetId}`,
+          resource_type: 'auto',
+          overwrite: true,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result as { secure_url: string });
+        }
+      );
+      uploadStream.end(buffer);
     });
 
     // Return public URL
-    return NextResponse.json({ url: blob.url });
+    return NextResponse.json({ url: uploadResult.secure_url });
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json(

@@ -24,6 +24,7 @@ import { formatDateTime } from '@/lib/utils';
 import { InviteByEmailButton } from '@/components/team/invite-by-email-button';
 import { CreateInviteLinkButton } from '@/components/team/create-invite-link-button';
 import { InvitationsList } from '@/components/team/invitations-list';
+import { UserActions } from '@/components/team/user-actions';
 
 export default async function TeamPage() {
   const currentUser = await getCurrentDbUser();
@@ -92,12 +93,13 @@ export default async function TeamPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Rôle</TableHead>
                 <TableHead>Date d'ajout</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {teamMembers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
                     Aucun membre dans l'équipe
                   </TableCell>
                 </TableRow>
@@ -115,6 +117,14 @@ export default async function TeamPage() {
                     <TableCell>{getRoleBadge(member.role)}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDateTime(member.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <UserActions
+                        userId={member.id}
+                        userEmail={member.email}
+                        currentRole={member.role}
+                        isCurrentUser={member.id === currentUser.id}
+                      />
                     </TableCell>
                   </TableRow>
                 ))

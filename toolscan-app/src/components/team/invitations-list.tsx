@@ -63,6 +63,10 @@ export function InvitationsList({ invitations }: InvitationsListProps) {
     await navigator.clipboard.writeText(link);
   };
 
+  const copyInvitationCode = async (token: string) => {
+    await navigator.clipboard.writeText(token);
+  };
+
   const getStatusBadge = (invitation: Invitation) => {
     const now = new Date();
 
@@ -121,6 +125,7 @@ export function InvitationsList({ invitations }: InvitationsListProps) {
               <TableRow>
                 <TableHead>Type</TableHead>
                 <TableHead>Destinataire</TableHead>
+                <TableHead>Code</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Utilisation</TableHead>
                 <TableHead>Invité par</TableHead>
@@ -138,6 +143,22 @@ export function InvitationsList({ invitations }: InvitationsListProps) {
                     ) : (
                       <span className="text-muted-foreground">Lien partageable</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <code className="rounded bg-muted px-2 py-1 text-xs font-mono">
+                        {invitation.token.substring(0, 8)}...
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => copyInvitationCode(invitation.token)}
+                        title="Copier le code complet"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(invitation)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">

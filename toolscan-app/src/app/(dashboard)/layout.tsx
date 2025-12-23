@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
-import { ScanLine, Home, Package, History, Settings, BarChart3 } from 'lucide-react';
+import { ScanLine, Home, Package, History, Users, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
 import { getCurrentDbUser, hasTenant } from '@/lib/clerk/utils';
@@ -11,7 +11,7 @@ const allNavigation = [
   { name: 'Gestion', href: '/dashboard/cabinets', icon: Package, roles: ['admin', 'super_admin'] },
   { name: 'Historique', href: '/dashboard/verifications', icon: History, roles: ['admin', 'super_admin'] },
   { name: 'Analytiques', href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'super_admin'] },
-  { name: 'Paramètres', href: '/dashboard/settings', icon: Settings, roles: ['admin', 'super_admin'] },
+  { name: 'Utilisateurs', href: '/dashboard/settings/team', icon: Users, roles: ['admin', 'super_admin'] },
 ];
 
 export default async function DashboardLayout({

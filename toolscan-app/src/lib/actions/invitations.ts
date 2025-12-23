@@ -8,10 +8,18 @@ import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
 
 /**
- * Generate a secure random token for invitations
+ * Generate a short 5-letter invitation code (uppercase)
  */
 function generateInvitationToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing chars like I, O, 0, 1
+  let code = '';
+  const randomBytes = crypto.randomBytes(5);
+
+  for (let i = 0; i < 5; i++) {
+    code += chars[randomBytes[i] % chars.length];
+  }
+
+  return code;
 }
 
 /**

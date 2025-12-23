@@ -139,10 +139,38 @@ export default async function TeamPage() {
         <CardHeader>
           <CardTitle>Inviter des membres</CardTitle>
           <CardDescription>
-            Invitez des utilisateurs à rejoindre votre organisation par email ou avec un lien d'invitation
+            Deux moyens pour inviter des utilisateurs à rejoindre votre organisation
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          <div className="rounded-lg border bg-muted/50 p-4">
+            <h3 className="font-semibold mb-3">Comment inviter des membres ?</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                  1
+                </div>
+                <div>
+                  <p className="font-medium">Invitation par email</p>
+                  <p className="text-muted-foreground">
+                    Un email est envoyé avec un lien d'invitation. Le destinataire clique sur le lien et créé son compte.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                  2
+                </div>
+                <div>
+                  <p className="font-medium">Code d'invitation (5 lettres)</p>
+                  <p className="text-muted-foreground">
+                    Partagez le code à 5 lettres. L'utilisateur va sur la page d'inscription, clique sur "Rejoindre une équipe" et entre le code.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-4">
             <InviteByEmailButton />
             <CreateInviteLinkButton />

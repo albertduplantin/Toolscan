@@ -146,15 +146,15 @@ export function InvitationsList({ invitations }: InvitationsListProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <code className="rounded bg-muted px-2 py-1 text-xs font-mono">
-                        {invitation.token.substring(0, 8)}...
+                      <code className="rounded bg-muted px-2 py-1 text-sm font-mono font-bold tracking-wider">
+                        {invitation.token}
                       </code>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6"
                         onClick={() => copyInvitationCode(invitation.token)}
-                        title="Copier le code complet"
+                        title="Copier le code"
                       >
                         <Copy className="h-3 w-3" />
                       </Button>

@@ -4,11 +4,12 @@ import { ScanLine, Home, Package, History, Users, BarChart3 } from 'lucide-react
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
 import { getCurrentDbUser, hasTenant } from '@/lib/clerk/utils';
+import { MobileNav } from '@/components/layout/mobile-nav';
 
 // Define navigation items with role requirements
 const allNavigation = [
   { name: 'Mes armoires', href: '/dashboard', icon: Home, roles: ['user', 'admin', 'super_admin'] },
-  { name: 'Gestion', href: '/dashboard/cabinets', icon: Package, roles: ['admin', 'super_admin'] },
+  { name: 'Gestion', href: '/dashboard/cabinets', icon: Package, roles: ['user', 'admin', 'super_admin'] },
   { name: 'Historique', href: '/dashboard/verifications', icon: History, roles: ['admin', 'super_admin'] },
   { name: 'Analytiques', href: '/dashboard/analytics', icon: BarChart3, roles: ['admin', 'super_admin'] },
   { name: 'Utilisateurs', href: '/dashboard/settings/team', icon: Users, roles: ['admin', 'super_admin'] },
@@ -40,8 +41,11 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 border-r bg-muted/40">
+      {/* Mobile Navigation */}
+      <MobileNav navigation={navigation} />
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block w-64 border-r bg-muted/40">
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b px-6">
@@ -78,7 +82,16 @@ export default async function DashboardLayout({
 
       {/* Main content */}
       <main className="flex-1">
-        <div className="container mx-auto p-8">{children}</div>
+        {/* Mobile header with logo */}
+        <div className="lg:hidden flex h-16 items-center justify-between border-b px-4">
+          <div className="flex items-center gap-2">
+            <ScanLine className="h-6 w-6" />
+            <span className="text-xl font-bold">ToolScan</span>
+          </div>
+          <UserButton afterSignOutUrl="/" />
+        </div>
+
+        <div className="container mx-auto p-4 lg:p-8">{children}</div>
       </main>
     </div>
   );

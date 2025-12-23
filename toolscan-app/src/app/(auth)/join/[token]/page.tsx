@@ -35,41 +35,56 @@ export default async function JoinPage({
   // If user doesn't exist in our DB yet (just signed up), sync from Clerk
   if (!currentUser) {
     try {
+      // Wait a bit for webhook to process
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       currentUser = await syncUserFromClerk(userId);
 
       if (!currentUser) {
-        return (
-          <div className="flex min-h-screen items-center justify-center p-4">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle>Error</CardTitle>
-                <CardDescription>
-                  There was an error creating your account. Please try again.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/sign-in">
-                  <Button className="w-full">Try again</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-        );
+        // Try one more time after another delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        currentUser = await getCurrentDbUser();
+
+        if (!currentUser) {
+          return (
+            <div className="flex min-h-screen items-center justify-center p-4">
+              <Card className="w-full max-w-md">
+                <CardHeader>
+                  <CardTitle>Synchronisation en cours...</CardTitle>
+                  <CardDescription>
+                    Votre compte est en cours de création. Veuillez patienter quelques instants puis réessayer.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link href={`/join/${token}`}>
+                    <Button className="w-full">Réessayer</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        }
       }
     } catch (error) {
+      console.error('Error syncing user:', error);
       return (
         <div className="flex min-h-screen items-center justify-center p-4">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle>Error</CardTitle>
+              <CardTitle>Erreur de synchronisation</CardTitle>
               <CardDescription>
-                {error instanceof Error ? error.message : 'An error occurred'}
+                Une erreur est survenue lors de la création de votre compte. Veuillez réessayer dans quelques instants.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/sign-in">
-                <Button className="w-full">Try again</Button>
-              </Link>
+              <div className="space-y-2">
+                <Link href={`/join/${token}`} className="block">
+                  <Button className="w-full">Réessayer</Button>
+                </Link>
+                <Link href="/sign-in" className="block">
+                  <Button variant="outline" className="w-full">Se connecter</Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>

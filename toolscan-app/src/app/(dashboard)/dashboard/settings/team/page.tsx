@@ -119,12 +119,14 @@ export default async function TeamPage() {
                       {formatDateTime(member.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <UserActions
-                        userId={member.id}
-                        userEmail={member.email}
-                        currentRole={member.role}
-                        isCurrentUser={member.id === currentUser.id}
-                      />
+                      {member.id !== currentUser.id && member.role !== 'super_admin' && (
+                        <UserActions
+                          userId={member.id}
+                          userEmail={member.email}
+                          currentRole={member.role}
+                          isCurrentUser={member.id === currentUser.id}
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

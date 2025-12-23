@@ -126,24 +126,29 @@ export default async function JoinPage({
   // Auto-accept the invitation and redirect
   try {
     await acceptInvitation(token, currentUser.id);
-    redirect('/dashboard');
   } catch (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Error accepting invitation</CardTitle>
-            <CardDescription>
-              {error instanceof Error ? error.message : 'An error occurred'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/dashboard">
-              <Button className="w-full">Go to Dashboard</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    // If error is not from redirect, show error page
+    if (error instanceof Error && !error.message.includes('NEXT_REDIRECT')) {
+      return (
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Error accepting invitation</CardTitle>
+              <CardDescription>
+                {error.message}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/dashboard">
+                <Button className="w-full">Go to Dashboard</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
   }
+
+  // If we reach here, invitation was accepted successfully
+  redirect('/dashboard');
 }

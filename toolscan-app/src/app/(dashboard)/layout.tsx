@@ -32,7 +32,14 @@ export default async function DashboardLayout({
   if (!user) {
     // User not in DB yet, wait for webhook and sync
     await new Promise(resolve => setTimeout(resolve, 1000));
-    user = await syncUserFromClerk(userId);
+    try {
+      user = await syncUserFromClerk(userId);
+    } catch (error) {
+      console.error('Error syncing user from Clerk:', error);
+      // Wait a bit more and try to get user again
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      user = await getCurrentDbUser();
+    }
   }
 
   // If still no user or no tenant, redirect to onboarding

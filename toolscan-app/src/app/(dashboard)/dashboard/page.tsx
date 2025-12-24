@@ -18,13 +18,14 @@ import { ScanLine, Package } from 'lucide-react';
 export default async function DashboardPage() {
   const currentUser = await getCurrentDbUser();
 
-  if (!currentUser || !currentUser.tenantId) {
+  // Layout already ensures user exists and has tenantId
+  if (!currentUser) {
     redirect('/onboarding');
   }
 
   // Get all configured cabinets (not drafts)
   const allCabinets = await db.query.cabinets.findMany({
-    where: eq(cabinets.tenantId, currentUser.tenantId),
+    where: eq(cabinets.tenantId, currentUser.tenantId!),
     orderBy: (cabinets, { desc }) => [desc(cabinets.createdAt)],
     with: {
       tools: true,

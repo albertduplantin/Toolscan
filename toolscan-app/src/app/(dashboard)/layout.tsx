@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { ScanLine, Home, Package, History, Users, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
-import { getCurrentDbUser, hasTenant } from '@/lib/clerk/utils';
+import { getCurrentDbUser, syncUserFromClerk } from '@/lib/clerk/utils';
 import { MobileNav } from '@/components/layout/mobile-nav';
 
 // Define navigation items with role requirements
@@ -26,13 +26,19 @@ export default async function DashboardLayout({
     redirect('/sign-in');
   }
 
-  // Check if user has a tenant, if not redirect to onboarding
-  const userHasTenant = await hasTenant();
-  if (!userHasTenant) {
-    redirect('/onboarding');
+  // Get user from database, sync from Clerk if needed
+  let user = await getCurrentDbUser();
+
+  if (!user) {
+    // User not in DB yet, wait for webhook and sync
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    user = await syncUserFromClerk(userId);
   }
 
-  const user = await getCurrentDbUser();
+  // If still no user or no tenant, redirect to onboarding
+  if (!user || !user.tenantId) {
+    redirect('/onboarding');
+  }
 
   // Filter navigation based on user role
   const navigation = allNavigation.filter(item =>

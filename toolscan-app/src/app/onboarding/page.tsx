@@ -53,6 +53,18 @@ function OnboardingContent() {
               }
             }
           }
+
+          // If still no user after retries, manually sync from Clerk
+          console.log('User not found after webhook retries, attempting manual sync...');
+          const syncResponse = await fetch('/api/user/sync', { method: 'POST' });
+          if (syncResponse.ok) {
+            const syncData = await syncResponse.json();
+            if (syncData.user && syncData.user.tenantId) {
+              // User synced and has tenant, redirect to dashboard
+              router.push('/dashboard');
+              return;
+            }
+          }
         } else {
           // Normal check without retry
           const response = await fetch('/api/user/me');

@@ -25,6 +25,7 @@ function OnboardingContent() {
   const [loading, setLoading] = useState(false);
   const [checkingUser, setCheckingUser] = useState(true);
   const invitationToken = searchParams.get('invitation');
+  const syncParam = searchParams.get('sync');
 
   useEffect(() => {
     // If there's an invitation token, redirect to join page
@@ -36,6 +37,11 @@ function OnboardingContent() {
     // Check if user already has a tenant
     async function checkUserTenant() {
       try {
+        // If sync=true, wait a bit for webhook to process
+        if (syncParam === 'true') {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
         const response = await fetch('/api/user/me');
         if (response.ok) {
           const user = await response.json();
@@ -53,7 +59,7 @@ function OnboardingContent() {
     }
 
     checkUserTenant();
-  }, [invitationToken, router]);
+  }, [invitationToken, syncParam, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

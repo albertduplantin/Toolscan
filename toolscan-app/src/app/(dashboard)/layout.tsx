@@ -26,24 +26,22 @@ export default async function DashboardLayout({
     redirect('/sign-in');
   }
 
-  // Get user from database, sync from Clerk if needed
-  let user = await getCurrentDbUser();
+  // Get user from database
+  const user = await getCurrentDbUser();
 
+  // If no user exists in database, try to sync from Clerk once
   if (!user) {
-    // User not in DB yet, wait for webhook and sync
-    await new Promise(resolve => setTimeout(resolve, 1000));
     try {
-      user = await syncUserFromClerk(userId);
+      await syncUserFromClerk(userId);
     } catch (error) {
       console.error('Error syncing user from Clerk:', error);
-      // Wait a bit more and try to get user again
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      user = await getCurrentDbUser();
     }
+    // Redirect to a loading page that will retry
+    redirect('/onboarding?sync=true');
   }
 
-  // If still no user or no tenant, redirect to onboarding
-  if (!user || !user.tenantId) {
+  // If no tenant, redirect to onboarding
+  if (!user.tenantId) {
     redirect('/onboarding');
   }
 

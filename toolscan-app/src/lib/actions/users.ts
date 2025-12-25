@@ -7,7 +7,13 @@ import { getCurrentDbUser, isAdmin } from '@/lib/clerk/utils';
 import { revalidatePath } from 'next/cache';
 import { clerkClient } from '@clerk/nextjs/server';
 
-export async function updateUserRole(userId: string, newRole: 'user' | 'admin') {
+export async function updateUser(
+  userId: string,
+  data: {
+    role?: 'user' | 'admin';
+    phoneNumber?: string;
+  }
+) {
   const currentUser = await getCurrentDbUser();
   const userIsAdmin = await isAdmin();
 
@@ -20,7 +26,7 @@ export async function updateUserRole(userId: string, newRole: 'user' | 'admin') 
   }
 
   // Prevent changing own role
-  if (userId === currentUser.id) {
+  if (userId === currentUser.id && data.role) {
     throw new Error('Vous ne pouvez pas modifier votre propre rôle');
   }
 
@@ -35,24 +41,44 @@ export async function updateUserRole(userId: string, newRole: 'user' | 'admin') 
 
   // Prevent changing super_admin role
   if (userToUpdate.role === 'super_admin') {
-    throw new Error('Impossible de modifier le rôle d\'un super admin');
+    throw new Error('Impossible de modifier un super admin');
+  }
+
+  // Prepare update data
+  const updateData: any = {
+    updatedAt: new Date(),
+  };
+
+  if (data.phoneNumber !== undefined) {
+    updateData.phoneNumber = data.phoneNumber || null;
+  }
+
+  if (data.role !== undefined) {
+    updateData.role = data.role;
   }
 
   // Update in database
   await db
     .update(users)
-    .set({ role: newRole })
+    .set(updateData)
     .where(eq(users.id, userId));
 
-  // Update in Clerk metadata
-  const client = await clerkClient();
-  await client.users.updateUserMetadata(userToUpdate.clerkUserId, {
-    publicMetadata: {
-      role: newRole,
-    },
-  });
+  // Update role in Clerk metadata if role changed
+  if (data.role !== undefined) {
+    const client = await clerkClient();
+    await client.users.updateUserMetadata(userToUpdate.clerkUserId, {
+      publicMetadata: {
+        role: data.role,
+      },
+    });
+  }
 
   revalidatePath('/dashboard/settings/team');
+}
+
+// Keep backward compatibility
+export async function updateUserRole(userId: string, newRole: 'user' | 'admin') {
+  return updateUser(userId, { role: newRole });
 }
 
 export async function deleteUser(userId: string) {

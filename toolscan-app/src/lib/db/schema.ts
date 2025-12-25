@@ -28,6 +28,7 @@ export const users = pgTable('users', {
   clerkUserId: varchar('clerk_user_id', { length: 255 }).notNull().unique(),
   tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }),
   email: varchar('email', { length: 255 }).notNull(),
+  phoneNumber: varchar('phone_number', { length: 20 }),
   role: roleEnum('role').notNull().default('user'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

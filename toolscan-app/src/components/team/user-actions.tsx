@@ -28,17 +28,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { updateUserRole, deleteUser } from '@/lib/actions/users';
+import { updateUser, deleteUser } from '@/lib/actions/users';
 import toast from 'react-hot-toast';
+import { Input } from '@/components/ui/input';
 
 interface UserActionsProps {
   userId: string;
   userEmail: string;
   currentRole: string;
+  currentPhoneNumber?: string | null;
   isCurrentUser: boolean;
 }
 
-export function UserActions({ userId, userEmail, currentRole, isCurrentUser }: UserActionsProps) {
+export function UserActions({ userId, userEmail, currentRole, currentPhoneNumber, isCurrentUser }: UserActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -46,17 +48,21 @@ export function UserActions({ userId, userEmail, currentRole, isCurrentUser }: U
   const [selectedRole, setSelectedRole] = useState<'user' | 'admin'>(
     currentRole === 'admin' ? 'admin' : 'user'
   );
+  const [phoneNumber, setPhoneNumber] = useState(currentPhoneNumber || '');
 
   // Don't show actions for current user or super_admin
   if (isCurrentUser || currentRole === 'super_admin') {
     return null;
   }
 
-  const handleUpdateRole = async () => {
+  const handleUpdate = async () => {
     setLoading(true);
     try {
-      await updateUserRole(userId, selectedRole);
-      toast.success('Rôle mis à jour avec succès');
+      await updateUser(userId, {
+        role: selectedRole,
+        phoneNumber: phoneNumber.trim() || undefined,
+      });
+      toast.success('Utilisateur mis à jour avec succès');
       setEditDialogOpen(false);
       router.refresh();
     } catch (error) {
@@ -94,7 +100,7 @@ export function UserActions({ userId, userEmail, currentRole, isCurrentUser }: U
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
             <Pencil className="mr-2 h-4 w-4" />
-            Modifier le rôle
+            Modifier
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setDeleteDialogOpen(true)}
@@ -110,9 +116,9 @@ export function UserActions({ userId, userEmail, currentRole, isCurrentUser }: U
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier le rôle</DialogTitle>
+            <DialogTitle>Modifier l'utilisateur</DialogTitle>
             <DialogDescription>
-              Modifier le rôle de {userEmail}
+              Modifier les informations de {userEmail}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -132,6 +138,20 @@ export function UserActions({ userId, userEmail, currentRole, isCurrentUser }: U
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Numéro de téléphone</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                placeholder="+33 6 12 34 56 78"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Optionnel - Format international recommandé
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -141,7 +161,7 @@ export function UserActions({ userId, userEmail, currentRole, isCurrentUser }: U
             >
               Annuler
             </Button>
-            <Button onClick={handleUpdateRole} disabled={loading}>
+            <Button onClick={handleUpdate} disabled={loading}>
               {loading ? 'Mise à jour...' : 'Enregistrer'}
             </Button>
           </DialogFooter>

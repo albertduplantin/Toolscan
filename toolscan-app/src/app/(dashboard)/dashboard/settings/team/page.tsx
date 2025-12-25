@@ -91,6 +91,7 @@ export default async function TeamPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Email</TableHead>
+                <TableHead>Téléphone</TableHead>
                 <TableHead>Rôle</TableHead>
                 <TableHead>Date d'ajout</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -99,7 +100,7 @@ export default async function TeamPage() {
             <TableBody>
               {teamMembers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     Aucun membre dans l'équipe
                   </TableCell>
                 </TableRow>
@@ -114,6 +115,9 @@ export default async function TeamPage() {
                         </span>
                       )}
                     </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {member.phoneNumber || '-'}
+                    </TableCell>
                     <TableCell>{getRoleBadge(member.role)}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDateTime(member.createdAt)}
@@ -124,6 +128,7 @@ export default async function TeamPage() {
                           userId={member.id}
                           userEmail={member.email}
                           currentRole={member.role}
+                          currentPhoneNumber={member.phoneNumber}
                           isCurrentUser={member.id === currentUser.id}
                         />
                       )}

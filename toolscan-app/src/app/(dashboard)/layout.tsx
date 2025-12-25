@@ -47,7 +47,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       {/* Mobile Navigation */}
-      <MobileNav navigation={navigation} />
+      <MobileNav userRole={user.role} />
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-64 border-r bg-muted/40">

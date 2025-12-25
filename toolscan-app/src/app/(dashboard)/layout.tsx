@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { ScanLine, Home, Package, History, Users, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
-import { getCurrentDbUser, syncUserFromClerk } from '@/lib/clerk/utils';
+import { getCurrentDbUser } from '@/lib/clerk/utils';
 import { MobileNav } from '@/components/layout/mobile-nav';
 
 // Define navigation items with role requirements
@@ -29,14 +29,8 @@ export default async function DashboardLayout({
   // Get user from database
   const user = await getCurrentDbUser();
 
-  // If no user exists in database, try to sync from Clerk once
+  // If no user in database, redirect to onboarding with sync flag
   if (!user) {
-    try {
-      await syncUserFromClerk(userId);
-    } catch (error) {
-      console.error('Error syncing user from Clerk:', error);
-    }
-    // Redirect to a loading page that will retry
     redirect('/onboarding?sync=true');
   }
 

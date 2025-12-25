@@ -37,18 +37,32 @@ function OnboardingContent() {
     // Check if user already has a tenant
     async function checkUserTenant() {
       try {
-        // If sync=true, wait a bit for webhook to process
+        // If sync=true, wait for webhook to process
         if (syncParam === 'true') {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+          // Wait for webhook, then check multiple times
+          for (let i = 0; i < 3; i++) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-        const response = await fetch('/api/user/me');
-        if (response.ok) {
-          const user = await response.json();
-          if (user && user.tenantId) {
-            // User already has a tenant, redirect to dashboard
-            router.push('/dashboard');
-            return;
+            const response = await fetch('/api/user/me');
+            if (response.ok) {
+              const user = await response.json();
+              if (user && user.tenantId) {
+                // User already has a tenant, redirect to dashboard
+                router.push('/dashboard');
+                return;
+              }
+            }
+          }
+        } else {
+          // Normal check without retry
+          const response = await fetch('/api/user/me');
+          if (response.ok) {
+            const user = await response.json();
+            if (user && user.tenantId) {
+              // User already has a tenant, redirect to dashboard
+              router.push('/dashboard');
+              return;
+            }
           }
         }
       } catch (error) {

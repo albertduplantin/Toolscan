@@ -85,6 +85,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: uploadResult.secure_url });
   } catch (error) {
     console.error('Error uploading file:', error);
+    console.error('Cloudinary config:', {
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY ? '***' + process.env.CLOUDINARY_API_KEY.slice(-4) : 'missing',
+      api_secret: process.env.CLOUDINARY_API_SECRET ? '***' : 'missing',
+    });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }

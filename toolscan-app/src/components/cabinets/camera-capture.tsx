@@ -12,6 +12,7 @@ interface CameraCaptureProps {
   referenceImageUrl: string | null;
   silhouettes: any[];
   showOverlay?: boolean;
+  cabinetId?: string;
 }
 
 export function CameraCapture({
@@ -21,9 +22,11 @@ export function CameraCapture({
   referenceImageUrl,
   silhouettes,
   showOverlay = false,
+  cabinetId,
 }: CameraCaptureProps) {
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,7 +70,39 @@ export function CameraCapture({
     }
   };
 
-  const capturePhoto = () => {
+  const uploadImage = async (dataUrl: string): Promise<string> => {
+    if (!cabinetId) {
+      // If no cabinetId, return the data URL (for backwards compatibility)
+      return dataUrl;
+    }
+
+    // Convert data URL to Blob
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    // Create File from Blob
+    const file = new File([blob], `verification-${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+    // Upload to server
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('cabinetId', cabinetId);
+    formData.append('imageType', 'verification');
+
+    const uploadResponse = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload image');
+    }
+
+    const { url } = await uploadResponse.json();
+    return url;
+  };
+
+  const capturePhoto = async () => {
     if (canvasRef.current && videoRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
@@ -78,9 +113,27 @@ export function CameraCapture({
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         stopCamera();
-        onCapture(imageUrl);
+
+        // Upload image if cabinetId is provided
+        if (cabinetId) {
+          setUploading(true);
+          setError(null);
+          try {
+            const uploadedUrl = await uploadImage(dataUrl);
+            onCapture(uploadedUrl);
+          } catch (err) {
+            console.error('Error uploading image:', err);
+            setError('Erreur lors de l\'enregistrement de la photo');
+            // Fallback to data URL
+            onCapture(dataUrl);
+          } finally {
+            setUploading(false);
+          }
+        } else {
+          onCapture(dataUrl);
+        }
       }
     }
   };
@@ -135,13 +188,31 @@ export function CameraCapture({
   };
 
   // Use file input as fallback if camera is not available
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        onCapture(imageUrl);
+      reader.onload = async (event) => {
+        const dataUrl = event.target?.result as string;
+
+        // Upload image if cabinetId is provided
+        if (cabinetId) {
+          setUploading(true);
+          setError(null);
+          try {
+            const uploadedUrl = await uploadImage(dataUrl);
+            onCapture(uploadedUrl);
+          } catch (err) {
+            console.error('Error uploading image:', err);
+            setError('Erreur lors de l\'enregistrement de la photo');
+            // Fallback to data URL
+            onCapture(dataUrl);
+          } finally {
+            setUploading(false);
+          }
+        } else {
+          onCapture(dataUrl);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -188,12 +259,12 @@ export function CameraCapture({
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={stopCamera} variant="outline" className="flex-1">
+          <Button onClick={stopCamera} variant="outline" className="flex-1" disabled={uploading}>
             Annuler
           </Button>
-          <Button onClick={capturePhoto} className="flex-1">
+          <Button onClick={capturePhoto} className="flex-1" disabled={uploading}>
             <Camera className="mr-2 h-4 w-4" />
-            Capturer
+            {uploading ? 'Enregistrement...' : 'Capturer'}
           </Button>
         </div>
 

@@ -254,6 +254,7 @@ export default function VerifyCabinetPage() {
             referenceImageUrl={cabinet.fullImageUrl}
             silhouettes={cabinet.tools}
             showOverlay={!!verificationResult}
+            cabinetId={cabinetId}
           />
         </CardContent>
       </Card>

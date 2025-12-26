@@ -69,7 +69,6 @@ export async function POST(request: Request) {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           public_id: publicId,
-          folder: `toolscan/cabinets/${currentUser.tenantId}/${cabinetId}`,
           resource_type: 'auto',
           overwrite: true,
         },

@@ -39,6 +39,7 @@ export function CameraCapture({
 
   const startCamera = async () => {
     try {
+      console.log('[CameraCapture] Starting camera...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment', // Use back camera on mobile
@@ -47,16 +48,21 @@ export function CameraCapture({
         },
       });
 
+      console.log('[CameraCapture] Camera stream obtained:', stream.getVideoTracks());
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
         setStreaming(true);
         setError(null);
+        console.log('[CameraCapture] Camera started successfully');
       }
     } catch (err) {
-      console.error('Error accessing camera:', err);
+      console.error('[CameraCapture] Error accessing camera:', err);
+      console.error('[CameraCapture] Error name:', (err as Error).name);
+      console.error('[CameraCapture] Error message:', (err as Error).message);
       setError(
-        'Impossible d\'accéder à la caméra. Veuillez autoriser l\'accès à la caméra.'
+        'Impossible d\'accéder à la caméra. Veuillez autoriser l\'accès à la caméra ou utiliser le bouton "Choisir une photo".'
       );
     }
   };
@@ -72,16 +78,21 @@ export function CameraCapture({
 
   const uploadImage = async (dataUrl: string): Promise<string> => {
     if (!cabinetId) {
-      // If no cabinetId, return the data URL (for backwards compatibility)
+      console.log('[CameraCapture] No cabinetId, returning data URL');
       return dataUrl;
     }
+
+    console.log('[CameraCapture] Starting upload for cabinet:', cabinetId);
+    console.log('[CameraCapture] Data URL length:', dataUrl.length);
 
     // Convert data URL to Blob
     const response = await fetch(dataUrl);
     const blob = await response.blob();
+    console.log('[CameraCapture] Blob created, size:', blob.size, 'type:', blob.type);
 
     // Create File from Blob
     const file = new File([blob], `verification-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    console.log('[CameraCapture] File created, size:', file.size);
 
     // Upload to server
     const formData = new FormData();
@@ -89,23 +100,31 @@ export function CameraCapture({
     formData.append('cabinetId', cabinetId);
     formData.append('imageType', 'verification');
 
+    console.log('[CameraCapture] Uploading to /api/upload...');
     const uploadResponse = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
     });
 
+    console.log('[CameraCapture] Upload response status:', uploadResponse.status);
+
     if (!uploadResponse.ok) {
-      throw new Error('Failed to upload image');
+      const errorText = await uploadResponse.text();
+      console.error('[CameraCapture] Upload failed:', errorText);
+      throw new Error(`Failed to upload image: ${uploadResponse.status} ${errorText}`);
     }
 
-    const { url } = await uploadResponse.json();
-    return url;
+    const responseData = await uploadResponse.json();
+    console.log('[CameraCapture] Upload successful, URL:', responseData.url);
+    return responseData.url;
   };
 
   const capturePhoto = async () => {
     if (canvasRef.current && videoRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
+
+      console.log('[CameraCapture] Capturing photo, video dimensions:', video.videoWidth, 'x', video.videoHeight);
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
@@ -114,6 +133,7 @@ export function CameraCapture({
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        console.log('[CameraCapture] Photo captured, data URL length:', dataUrl.length);
         stopCamera();
 
         // Upload image if cabinetId is provided
@@ -121,17 +141,21 @@ export function CameraCapture({
           setUploading(true);
           setError(null);
           try {
+            console.log('[CameraCapture] Uploading captured photo...');
             const uploadedUrl = await uploadImage(dataUrl);
+            console.log('[CameraCapture] Upload complete, calling onCapture with URL:', uploadedUrl);
             onCapture(uploadedUrl);
           } catch (err) {
-            console.error('Error uploading image:', err);
-            setError('Erreur lors de l\'enregistrement de la photo');
+            console.error('[CameraCapture] Error uploading image:', err);
+            setError('Erreur lors de l\'enregistrement de la photo: ' + (err as Error).message);
             // Fallback to data URL
+            console.log('[CameraCapture] Falling back to data URL');
             onCapture(dataUrl);
           } finally {
             setUploading(false);
           }
         } else {
+          console.log('[CameraCapture] No cabinetId, using data URL');
           onCapture(dataUrl);
         }
       }
@@ -190,27 +214,34 @@ export function CameraCapture({
   // Use file input as fallback if camera is not available
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    console.log('[CameraCapture] File selected:', file?.name, file?.size, file?.type);
+
     if (file) {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const dataUrl = event.target?.result as string;
+        console.log('[CameraCapture] File loaded as data URL, length:', dataUrl.length);
 
         // Upload image if cabinetId is provided
         if (cabinetId) {
           setUploading(true);
           setError(null);
           try {
+            console.log('[CameraCapture] Uploading selected file...');
             const uploadedUrl = await uploadImage(dataUrl);
+            console.log('[CameraCapture] File upload complete, calling onCapture with URL:', uploadedUrl);
             onCapture(uploadedUrl);
           } catch (err) {
-            console.error('Error uploading image:', err);
-            setError('Erreur lors de l\'enregistrement de la photo');
+            console.error('[CameraCapture] Error uploading file:', err);
+            setError('Erreur lors de l\'enregistrement de la photo: ' + (err as Error).message);
             // Fallback to data URL
+            console.log('[CameraCapture] Falling back to data URL');
             onCapture(dataUrl);
           } finally {
             setUploading(false);
           }
         } else {
+          console.log('[CameraCapture] No cabinetId, using data URL');
           onCapture(dataUrl);
         }
       };

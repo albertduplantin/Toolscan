@@ -4,9 +4,12 @@ import { UTApi } from 'uploadthing/server';
 
 export async function POST(request: Request) {
   try {
+    console.log('[Upload API] Request received');
     const currentUser = await getCurrentDbUser();
+    console.log('[Upload API] Current user:', currentUser?.id, currentUser?.email);
 
     if (!currentUser || !currentUser.tenantId) {
+      console.error('[Upload API] User not authenticated or no tenant');
       return NextResponse.json(
         { error: 'User not authenticated or no tenant' },
         { status: 401 }
@@ -17,6 +20,14 @@ export async function POST(request: Request) {
     const file = formData.get('file') as File;
     const cabinetId = formData.get('cabinetId') as string;
     const imageType = formData.get('imageType') as string; // 'empty' or 'full'
+
+    console.log('[Upload API] Form data:', {
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type,
+      cabinetId,
+      imageType
+    });
 
     if (!file) {
       return NextResponse.json(
@@ -50,16 +61,20 @@ export async function POST(request: Request) {
     }
 
     // Initialize UTApi with token from environment
+    console.log('[Upload API] Initializing UTApi...');
     const utapi = new UTApi({
       token: process.env.UPLOADTHING_TOKEN,
     });
 
     // Upload to Uploadthing using UTApi
     // uploadFiles expects an array and returns an array
+    console.log('[Upload API] Uploading to Uploadthing...');
     const response = await utapi.uploadFiles([file]);
+    console.log('[Upload API] Uploadthing response:', JSON.stringify(response, null, 2));
 
     // Check if upload was successful
     if (!response || response.length === 0) {
+      console.error('[Upload API] No response from Uploadthing');
       throw new Error('Upload failed: No response from Uploadthing');
     }
 
@@ -67,13 +82,19 @@ export async function POST(request: Request) {
 
     if (!uploadResult.data) {
       const errorMessage = uploadResult.error?.message || 'Unknown error';
+      console.error('[Upload API] Upload failed:', errorMessage);
       throw new Error(`Upload failed: ${errorMessage}`);
     }
 
+    // Get the file URL (using any to bypass deprecation warning for now)
+    const fileUrl = (uploadResult.data as any).url;
+    console.log('[Upload API] Upload successful, URL:', fileUrl);
+    console.log('[Upload API] Full upload result data:', uploadResult.data);
     // Return public URL
-    return NextResponse.json({ url: uploadResult.data.url });
+    return NextResponse.json({ url: fileUrl });
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error('[Upload API] Error uploading file:', error);
+    console.error('[Upload API] Error stack:', (error as Error).stack);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }

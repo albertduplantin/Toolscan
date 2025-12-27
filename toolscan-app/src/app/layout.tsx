@@ -22,6 +22,11 @@ export default function RootLayout({
   return (
     <ClerkProvider localization={frFR}>
       <html lang="fr" suppressHydrationWarning>
+        <head>
+          {/* Eruda mobile console for debugging on smartphones */}
+          <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+          <script dangerouslySetInnerHTML={{ __html: `eruda.init();` }} />
+        </head>
         <body className={inter.className}>
           {children}
           <Toaster position="top-right" />

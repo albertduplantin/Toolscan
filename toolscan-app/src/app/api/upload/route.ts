@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/clerk/utils';
 import { UTApi } from 'uploadthing/server';
 
-const utapi = new UTApi();
-
 export async function POST(request: Request) {
   try {
     const currentUser = await getCurrentDbUser();
@@ -51,11 +49,25 @@ export async function POST(request: Request) {
       );
     }
 
+    // Initialize UTApi with token from environment
+    const utapi = new UTApi({
+      token: process.env.UPLOADTHING_TOKEN,
+    });
+
     // Upload to Uploadthing using UTApi
-    const uploadResult = await utapi.uploadFiles(file);
+    // uploadFiles expects an array and returns an array
+    const response = await utapi.uploadFiles([file]);
+
+    // Check if upload was successful
+    if (!response || response.length === 0) {
+      throw new Error('Upload failed: No response from Uploadthing');
+    }
+
+    const uploadResult = response[0];
 
     if (!uploadResult.data) {
-      throw new Error('Upload failed');
+      const errorMessage = uploadResult.error?.message || 'Unknown error';
+      throw new Error(`Upload failed: ${errorMessage}`);
     }
 
     // Return public URL

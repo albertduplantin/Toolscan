@@ -67,15 +67,21 @@ export default function VerifyCabinetPage() {
   };
 
   const handleCapture = async (imageUrl: string) => {
+    console.log('[VerifyPage] handleCapture called with imageUrl:', imageUrl);
+    console.log('[VerifyPage] Is data URL?', imageUrl.startsWith('data:'));
+    console.log('[VerifyPage] Is Uploadthing URL?', imageUrl.includes('utfs.io'));
+
     setCapturedImage(imageUrl);
 
     if (!cabinet?.emptyImageUrl || !cabinet?.tools || cabinet.tools.length === 0) {
+      console.error('[VerifyPage] Missing reference data');
       toast.error('Données de référence manquantes');
       return;
     }
 
     try {
       // Run real verification algorithm
+      console.log('[VerifyPage] Starting verification...');
       toast.loading('Analyse de l\'image en cours...', { id: 'verification' });
 
       const result = await verifyTools(
@@ -88,6 +94,8 @@ export default function VerifyCabinetPage() {
           silhouetteData: t.silhouetteData,
         }))
       );
+
+      console.log('[VerifyPage] Verification result:', result);
 
       // Find missing and present tool objects
       const missing = cabinet.tools.filter(t => result.missingTools.includes(t.id));
@@ -256,6 +264,20 @@ export default function VerifyCabinetPage() {
             showOverlay={!!verificationResult}
             cabinetId={cabinetId}
           />
+          {/* Debug info */}
+          {capturedImage && (
+            <div className="mt-4 p-2 bg-gray-100 rounded text-xs break-all">
+              <strong>Debug - Image URL:</strong>
+              <br />
+              {capturedImage.startsWith('data:') ? (
+                <span className="text-orange-600">Data URL (non uploadé) - {capturedImage.substring(0, 50)}...</span>
+              ) : (
+                <a href={capturedImage} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                  {capturedImage}
+                </a>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

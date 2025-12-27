@@ -120,24 +120,51 @@ export function CameraCapture({
   };
 
   const capturePhoto = async () => {
+    console.log('[CameraCapture] capturePhoto called, cabinetId:', cabinetId);
+
+    if (!canvasRef.current) {
+      console.error('[CameraCapture] No canvas ref');
+      return;
+    }
+
+    if (!videoRef.current) {
+      console.error('[CameraCapture] No video ref');
+      return;
+    }
+
     if (canvasRef.current && videoRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
 
       console.log('[CameraCapture] Capturing photo, video dimensions:', video.videoWidth, 'x', video.videoHeight);
 
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.error('[CameraCapture] Invalid video dimensions');
+        setError('Erreur: dimensions vidéo invalides');
+        return;
+      }
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
       const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error('[CameraCapture] Could not get canvas context');
+        return;
+      }
+
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         console.log('[CameraCapture] Photo captured, data URL length:', dataUrl.length);
+        console.log('[CameraCapture] Data URL preview:', dataUrl.substring(0, 100));
         stopCamera();
 
         // Upload image if cabinetId is provided
+        console.log('[CameraCapture] Checking cabinetId...', { cabinetId, hasCabinetId: !!cabinetId });
+
         if (cabinetId) {
+          console.log('[CameraCapture] Cabinet ID exists, starting upload process...');
           setUploading(true);
           setError(null);
           try {
@@ -147,6 +174,11 @@ export function CameraCapture({
             onCapture(uploadedUrl);
           } catch (err) {
             console.error('[CameraCapture] Error uploading image:', err);
+            console.error('[CameraCapture] Error details:', {
+              name: (err as Error).name,
+              message: (err as Error).message,
+              stack: (err as Error).stack
+            });
             setError('Erreur lors de l\'enregistrement de la photo: ' + (err as Error).message);
             // Fallback to data URL
             console.log('[CameraCapture] Falling back to data URL');
@@ -155,7 +187,7 @@ export function CameraCapture({
             setUploading(false);
           }
         } else {
-          console.log('[CameraCapture] No cabinetId, using data URL');
+          console.warn('[CameraCapture] No cabinetId provided, using data URL directly');
           onCapture(dataUrl);
         }
       }

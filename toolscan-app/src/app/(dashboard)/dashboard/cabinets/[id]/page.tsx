@@ -22,6 +22,7 @@ import {
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { ToolDetectionOverlay } from '@/components/cabinets/tool-detection-overlay';
 
 type Tool = {
   id: string;
@@ -175,17 +176,30 @@ export default function CabinetDetailsPage() {
           {cabinet.fullImageUrl && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Photo armoire pleine</CardTitle>
+                <CardTitle className="text-lg">Photo armoire pleine avec outils détectés</CardTitle>
+                <CardDescription>
+                  {cabinet.tools?.length || 0} outil(s) identifié(s)
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
-                  <Image
-                    src={cabinet.fullImageUrl}
-                    alt="Armoire pleine"
-                    fill
-                    className="object-contain"
+                {cabinet.tools && cabinet.tools.length > 0 ? (
+                  <ToolDetectionOverlay
+                    imageUrl={cabinet.fullImageUrl}
+                    tools={cabinet.tools}
+                    highlightedToolIds={cabinet.tools.map(t => t.id)}
+                    showLabels={true}
+                    className="w-full"
                   />
-                </div>
+                ) : (
+                  <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
+                    <Image
+                      src={cabinet.fullImageUrl}
+                      alt="Armoire pleine"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

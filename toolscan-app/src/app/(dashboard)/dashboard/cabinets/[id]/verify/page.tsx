@@ -14,6 +14,7 @@ import { ArrowLeft, Camera, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { CameraCapture } from '@/components/cabinets/camera-capture';
+import { ToolDetectionOverlay } from '@/components/cabinets/tool-detection-overlay';
 import { verifyTools, generateVerificationOverlay } from '@/lib/detection/verification-detector';
 
 type Tool = {
@@ -252,18 +253,40 @@ export default function VerifyCabinetPage() {
         </Card>
       )}
 
-      {/* Camera Capture */}
+      {/* Camera Capture or Tool Detection Result */}
       <Card>
         <CardContent className="p-6">
-          <CameraCapture
-            value={capturedImage}
-            onCapture={handleCapture}
-            onRetake={handleRetake}
-            referenceImageUrl={cabinet.fullImageUrl}
-            silhouettes={cabinet.tools}
-            showOverlay={!!verificationResult}
-            cabinetId={cabinetId}
-          />
+          {!capturedImage || !verificationResult ? (
+            <CameraCapture
+              value={capturedImage}
+              onCapture={handleCapture}
+              onRetake={handleRetake}
+              referenceImageUrl={cabinet.fullImageUrl}
+              silhouettes={cabinet.tools}
+              showOverlay={!!verificationResult}
+              cabinetId={cabinetId}
+            />
+          ) : (
+            <div className="space-y-4">
+              <ToolDetectionOverlay
+                imageUrl={capturedImage}
+                tools={cabinet.tools}
+                highlightedToolIds={verificationResult.presentTools.map(t => t.id)}
+                showLabels={true}
+                className="w-full"
+              />
+              <div className="flex gap-2 pt-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded bg-green-500"></div>
+                  <span className="text-sm text-muted-foreground">Outils présents ({verificationResult.presentTools.length})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded bg-red-500"></div>
+                  <span className="text-sm text-muted-foreground">Outils manquants ({verificationResult.missingTools.length})</span>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Debug info */}
           {capturedImage && (
             <div className="mt-4 p-2 bg-gray-100 rounded text-xs break-all">
